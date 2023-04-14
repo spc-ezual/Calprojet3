@@ -1,6 +1,7 @@
 package fr.istic.cal.while1cons
 
 import scala.util.Try
+import javax.lang.model.element.VariableElement
 
 /**
  * définition d'une exception pour le cas des listes vides
@@ -54,7 +55,50 @@ object While1cons {
    * que l'expression et une expression qui contient le résultat
    */
   // TODO TP4
-  def while1ConsExprV(expression: Expression): (List[Command], Variable) = ???
+  def while1ConsExprV(expression: Expression): (List[Any], Any) = {
+    expression match{
+      case Nl => {
+        val nv:Variable = NewVar.make()
+        (List(Set(nv,Nl)),nv)
+      }
+      case Cst(name) => {
+        val nv:Variable = NewVar.make()
+        (List(Set(nv,Cst(name))),nv)
+      }
+      case VarExp(name) => {
+        val nv:Variable = NewVar.make()
+        (List(Set(nv,VarExp(name))),nv)
+      }
+      case Hd(arg) => {
+        val temp = while1ConsExprV(arg)
+        val hd:Variable = NewVar.make()
+        val nv:Variable = NewVar.make()
+        (temp._1:::List(Set(hd,temp._2),Set(nv,Hd(hd))),nv)
+      }
+      case Tl(arg) => {
+        val temp = while1ConsExprV(arg)
+        val tl:Variable = NewVar.make()
+        val nv:Variable = NewVar.make()
+        (temp._1:::List(Set(tl,temp._2),Set(nv,Tl(tl))),nv)
+      }
+      case Cons(arg1, arg2) => {
+        val temp1 = while1ConsExprV(arg1)
+        val temp2 = while1ConsExprV(arg2)
+        val t1 : Variable = NewVar.make()
+        val t2 : Variable = NewVar.make()
+        val nv : Variable = NewVar.make()
+        (temp1._1:::temp2._1:::List(Set(t1,temp1._2,Set(t2,temp2._2)),Set(nv,Cons(t1,t2))),nv)
+      }
+      case Eq(arg1, arg2) => {
+        val temp1 = while1ConsExprV(arg1)
+        val temp2 = while1ConsExprV(arg2)
+        val t1 : Variable = NewVar.make()
+        val t2 : Variable = NewVar.make()
+        val nv : Variable = NewVar.make()
+        (temp1._1:::temp2._1:::List(Set(t1,temp1._2,Set(t2,temp2._2)),Set(nv,Eq(t1,t2))),nv)
+      }
+    }
+  }
 
   /**
    * @param expression : un AST décrivant une expression du langage WHILE
