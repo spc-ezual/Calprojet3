@@ -1,7 +1,6 @@
 package fr.istic.cal.while1cons
 
 import scala.util.Try
-import javax.lang.model.element.VariableElement
 
 /**
  * définition d'une exception pour le cas des listes vides
@@ -49,64 +48,143 @@ object While1cons {
    *  TRAITEMENT DES EXPRESSIONS DU LANGAGE WHILE
    */
 
-  /**
+/**
    * @param expression : un AST décrivant une expression du langage WHILE
    * @return une paire constituée d'une liste d'affectations ayant le même effet
    * que l'expression et une expression qui contient le résultat
    */
-  // TODO TP4
-  def while1ConsExprV(expression: Expression): (List[Any], Any) = {
+  def while1ConsExprV(expression: Expression): (List[Command], Variable) = {
     expression match{
-      case Nl => {
-        val nv:Variable = NewVar.make()
-        (List(Set(nv,Nl)),nv)
-      }
-      case Cst(name) => {
-        val nv:Variable = NewVar.make()
-        (List(Set(nv,Cst(name))),nv)
-      }
-      case VarExp(name) => {
-        val nv:Variable = NewVar.make()
-        (List(Set(nv,VarExp(name))),nv)
-      }
-      case Hd(arg) => {
-        val temp = while1ConsExprV(arg)
-        val hd:Variable = NewVar.make()
-        val nv:Variable = NewVar.make()
-        (temp._1:::List(Set(hd,temp._2),Set(nv,Hd(hd))),nv)
-      }
-      case Tl(arg) => {
-        val temp = while1ConsExprV(arg)
-        val tl:Variable = NewVar.make()
-        val nv:Variable = NewVar.make()
-        (temp._1:::List(Set(tl,temp._2),Set(nv,Tl(tl))),nv)
-      }
-      case Cons(arg1, arg2) => {
-        val temp1 = while1ConsExprV(arg1)
-        val temp2 = while1ConsExprV(arg2)
-        val t1 : Variable = NewVar.make()
-        val t2 : Variable = NewVar.make()
-        val nv : Variable = NewVar.make()
-        (temp1._1:::temp2._1:::List(Set(t1,temp1._2,Set(t2,temp2._2)),Set(nv,Cons(t1,t2))),nv)
-      }
-      case Eq(arg1, arg2) => {
-        val temp1 = while1ConsExprV(arg1)
-        val temp2 = while1ConsExprV(arg2)
-        val t1 : Variable = NewVar.make()
-        val t2 : Variable = NewVar.make()
-        val nv : Variable = NewVar.make()
-        (temp1._1:::temp2._1:::List(Set(t1,temp1._2,Set(t2,temp2._2)),Set(nv,Eq(t1,t2))),nv)
-      }
-    }
+      case Nl =>
+        val nv = NewVar.make()
+        (List(Set(nv, Nl)), nv)
+
+      case Cst(name) =>
+        val nv = NewVar.make()
+        (List(Set(nv, Cst(name))), nv)
+
+      case VarExp(name) =>
+        val nv = NewVar.make()
+        (Nil, Var(name))
+        
+      case Hd(arg) => 
+        arg match {
+          case VarExp(name) => 
+            val nv = NewVar.make()
+            (List(Set(nv, Hd(arg))),nv)
+          case _ => 
+            val (s1,v1) = while1ConsExprV(arg)
+            val nv = NewVar.make()
+            val variable = v1 match{
+              case Var(name) => VarExp(name)
+            }
+            (s1 ::: List(Set(nv,Hd(variable))),nv)
+          
+        }
+
+      case Tl(arg) => 
+        arg match {
+          case VarExp(name) => 
+            val nv = NewVar.make()
+            (List(Set(nv, Tl(arg))),nv)
+          case _ => 
+            val (s1,v1) = while1ConsExprV(arg)
+            val nv = NewVar.make()
+            val variable = v1 match{
+              case Var(name) => VarExp(name)
+            }
+            (s1 ::: List(Set(nv,Tl(variable))),nv)
+          
+        }
+
+      case Cons(arg1, arg2) =>  
+        val (s1,v1) : (List[Command], Variable) = arg1 match{
+          case VarExp(name) => (Nil, Var(name))
+          case _ => while1ConsExprV(arg1)
+        }
+        val (s2 , v2) = arg2 match {
+          case VarExp(name) => (Nil, Var(name))
+          case _ => while1ConsExprV(arg2)
+        }
+        val variable1 = v1 match{
+              case Var(name) => VarExp(name)
+            } 
+        val variable2 = v2 match{
+              case Var(name) => VarExp(name)
+            }
+        val nv = NewVar.make()
+        (s1:::s2:::List(Set(nv,Cons(variable1,variable2))),nv)
+
+      case Eq(arg1, arg2) => 
+        val (s1,v1) : (List[Command], Variable) = arg1 match{
+          case VarExp(name) => (Nil, Var(name))
+          case _ => while1ConsExprV(arg1)
+        }
+        val (s2 , v2) = arg2 match {
+          case VarExp(name) => (Nil, Var(name))
+          case _ => while1ConsExprV(arg2)
+        }
+        val variable1 = v1 match{
+              case Var(name) => VarExp(name)
+            } 
+        val variable2 = v2 match{
+              case Var(name) => VarExp(name)
+            }
+        val nv = NewVar.make()
+        (s1:::s2:::List(Set(nv,Eq(variable1,variable2))),nv)
   }
+}
+
+
 
   /**
    * @param expression : un AST décrivant une expression du langage WHILE
    * @return une paire constituée d'une liste d'affectations ayant le même effet
    * que l'expression et la variable qui contient le résultat
    */
-  // TODO TP4
-  def while1ConsExprSE(expression: Expression): (List[Command], Expression) = ???
+  def while1ConsExprSE(expression: Expression): (List[Command], Expression) = {
+    expression match {
+
+      case Hd(arg) => 
+        val (s1,v1) = while1ConsExprV(arg)
+        val variable1 = v1 match{
+              case Var(name) => VarExp(name)
+            } 
+        (s1,Hd(variable1))
+
+      case Tl(arg) =>  
+        val (s1,v1) = while1ConsExprV(arg)
+        val variable1 = v1 match{
+              case Var(name) => VarExp(name)
+            } 
+        (s1,Tl(variable1))
+      
+      case Cons(arg1, arg2) => 
+        val (s1,v1) = while1ConsExprV(arg1)
+        val (s2,v2) = while1ConsExprV(arg2)
+        val variable1 = v1 match{
+              case Var(name) => VarExp(name)
+            } 
+        val variable2 = v2 match{
+              case Var(name) => VarExp(name)
+            }
+        (s1:::s2,Cons(variable1,variable2))
+
+
+      case Eq(arg1, arg2) => 
+        val (s1,v1) = while1ConsExprV(arg1)
+        val (s2,v2) = while1ConsExprV(arg2)
+        val variable1 = v1 match{
+              case Var(name) => VarExp(name)
+            } 
+        val variable2 = v2 match{
+              case Var(name) => VarExp(name)
+            }
+        (s1:::s2,Eq(variable1,variable2))
+
+      case _ => (Nil,expression)
+    }
+  }
 
   /**
    *
@@ -118,7 +196,21 @@ object While1cons {
    * et ayant le même effet que la commande
    */
   // TODO TP4
-  def while1ConsCommand(command: Command): List[Command] = ???
+  def while1ConsCommand(command: Command): List[Command] = 
+    command match {
+      case Nop => List(Nop)
+
+      case Set(variable, expression) => 
+        val (s1,v1) = while1ConsExprSE(expression)
+        (s1:::List(Set(variable,v1)))
+        
+      case While(condition, body) => 
+        val (s1,v1) = while1ConsExprSE(condition)
+        val (s2,v2) = while1ConsExprSE(v1)
+        val s3 = while1ConsCommands(body)
+        (s1 ::: s2::: List(While(v2,s3)))
+      case _ => ???
+    }
 
   /**
    * @param commands : une liste d'AST décrivant une liste de commandes du langage WHILE
@@ -126,7 +218,13 @@ object While1cons {
    * et ayant le même effet que la commande
    */
   // TODO TP4
-  def while1ConsCommands(commands: List[Command]): List[Command] = ???
+  def while1ConsCommands(commands: List[Command]): List[Command] = {
+    var rep : List[Command] = List()
+    for( command <- commands){
+      rep = rep ::: while1ConsCommand(command)
+    }
+    rep
+  }
 
   /**
    *
