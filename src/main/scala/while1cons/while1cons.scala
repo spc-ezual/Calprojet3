@@ -64,38 +64,23 @@ object While1cons {
         (List(Set(nv, Cst(name))), nv)
 
       case VarExp(name) =>
-        val nv = NewVar.make()
         (Nil, Var(name))
         
       case Hd(arg) => 
-        arg match {
-          case VarExp(name) => 
-            val nv = NewVar.make()
-            (List(Set(nv, Hd(arg))),nv)
-          case _ => 
             val (s1,v1) = while1ConsExprV(arg)
             val nv = NewVar.make()
             val variable = v1 match{
               case Var(name) => VarExp(name)
             }
             (s1 ::: List(Set(nv,Hd(variable))),nv)
-          
-        }
 
       case Tl(arg) => 
-        arg match {
-          case VarExp(name) => 
-            val nv = NewVar.make()
-            (List(Set(nv, Tl(arg))),nv)
-          case _ => 
             val (s1,v1) = while1ConsExprV(arg)
             val nv = NewVar.make()
             val variable = v1 match{
               case Var(name) => VarExp(name)
             }
             (s1 ::: List(Set(nv,Tl(variable))),nv)
-          
-        }
 
       case Cons(arg1, arg2) =>  
         val (s1,v1) : (List[Command], Variable) = arg1 match{
@@ -205,11 +190,26 @@ object While1cons {
         (s1:::List(Set(variable,v1)))
         
       case While(condition, body) => 
-        val (s1,v1) = while1ConsExprSE(condition)
-        val (s2,v2) = while1ConsExprSE(v1)
-        val s3 = while1ConsCommands(body)
-        (s1 ::: s2::: List(While(v2,s3)))
-      case _ => ???
+        val (s1,Var(v1)) = while1ConsExprV(condition)
+        val s2 = while1ConsCommands(body)
+
+        (s1:::List(While(VarExp(v1),s2:::s1)))
+      
+      case For(condition, body) => 
+        val (s1,Var(v1)) = while1ConsExprV(condition)
+        val s2 = while1ConsCommands(body)
+
+        (s1:::List(For(VarExp(v1),s2)))
+
+      case If(condition, then_commands, else_commands) => {
+        val (s1,Var(v1)) = while1ConsExprV(condition)
+
+        val s2 = while1ConsCommands(then_commands)
+        val s3 = while1ConsCommands(else_commands)
+
+        (s1:::List(If(VarExp(v1),s2,s3)))
+
+      }
     }
 
   /**
@@ -233,14 +233,19 @@ object While1cons {
 
   /**
    * @param program : un AST décrivant un programme du langage WHILE
-   * @param is : une liste de spécifications d'indentation
    * @return une liste de chaînes représentant la syntaxe concrète du programme
    */
   // TODO TP4
-  def while1ConsProgr(program: Program): Program = ???
+  def while1ConsProgr(program: Program): Program = {
+    program match{
+      case Progr(in, body, out) => Progr(in, while1ConsCommands(body), out)
+    }
+  }
 
   def main(args: Array[String]): Unit = {
-
+    println(while1ConsExprSE(Eq(Tl(VarExp("Y")),VarExp("X"))))
+    println(" ")
+    println(while1ConsExprSE(Eq(VarExp("X"), Tl(VarExp("Y")))))
     // vous pouvez ici tester manuellement vos fonctions par des print
 
   }
